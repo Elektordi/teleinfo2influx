@@ -77,7 +77,7 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
 def main() -> None:
     ser = serial.Serial(
         os.environ.get('SERIAL_PORT', '/dev/ttyAMA0'),
-        9600,
+        1200,
         bytesize=7,
         parity=serial.PARITY_EVEN
     )
