@@ -7,7 +7,7 @@ import logging
 import requests
 import serial
 
-logging.basicConfig(format="%(asctime)s %(name)-15s %(levelname)-8s %(message)s", level=20)
+logging.basicConfig(format="%(asctime)s %(name)-15s %(levelname)-8s %(message)s", level=logging.INFO)
 log:logging.Logger = logging.getLogger()
 
 def checksum(line:str) -> str:
@@ -16,13 +16,13 @@ def checksum(line:str) -> str:
 def parse_frame(frame:bytes, influxdb_url:str) -> bool:
     parsed_values = {}
     linevalues = []
-    for dataset in filter(None, frame.split(b'\x0d')):
+    for dataset in filter(None, frame.split(b'\r')):
         dataset = dataset.lstrip(b'\n')
-        checksumchar = checksum(dataset[:-1])
+        checksumchar = checksum(dataset[:-2])
         if checksumchar != chr(dataset[-1]):
             log.debug('Checksum error, aborting frame')
             return False
-        spline = dataset.split(b'\t')
+        spline = dataset.split(b' ')
         log.debug(spline)
         etiquette = spline[0].decode('ascii')
         value = spline[1].decode('ascii')
@@ -63,8 +63,8 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
             'timestamp': timestamp,
         }
 
-    influx_line = 'teleinfo,ADSC={adsc} {linev}'.format(
-        adsc=parsed_values['ADSC']['value'],
+    influx_line = 'teleinfo,ADCO={adco} {linev}'.format(
+        adco=parsed_values['ADCO']['value'],
         linev=','.join(linevalues),
     )
     try:
@@ -75,6 +75,7 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
     return True
 
 def main() -> None:
+    log.debug('start')
     ser = serial.Serial(
         os.environ.get('SERIAL_PORT', '/dev/ttyAMA0'),
         1200,
@@ -85,6 +86,7 @@ def main() -> None:
     first_frame = True
     while True:
         frame = ser.read_until(b'\x03')
+        log.debug(frame)
         if first_frame:
             first_frame = False
             continue
