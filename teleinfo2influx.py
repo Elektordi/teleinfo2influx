@@ -31,25 +31,9 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
             value = spline[2].decode('ascii')
             timestamp = spline[1].decode('ascii')
 
-        ints = [
-            'EAST',
-            'EASF',
-            'EASD',
-            'EAIT',
-            'ERQ',
-            'IRMS',
-            'URMS',
-            'PREF',
-            'PCOUP',
-            'SINST',
-            'SMAX',
-            'CCA',
-            'UMOY',
+        if value.isnumeric():
+            value = int(value)
 
-        ]
-        for radix in ints:
-            if etiquette.startswith(radix):
-                value = int(value)
         quote = '"'
         if isinstance(value, int):
             quote = ""
