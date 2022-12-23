@@ -22,7 +22,7 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
         if checksumchar != chr(dataset[-1]):
             log.debug('Checksum error, aborting frame')
             return False
-        spline = dataset.split(b' ')
+        spline = dataset[:-2].split(b' ')
         log.debug(spline)
         etiquette = spline[0].decode('ascii')
         value = spline[1].decode('ascii')
