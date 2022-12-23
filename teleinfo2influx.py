@@ -14,8 +14,8 @@ def checksum(line:str) -> str:
     return chr((sum(list(line)) & 0x3F) + 0x20)
 
 def parse_frame(frame:bytes, influxdb_url:str) -> bool:
-    parsed_values = {}
-    linevalues = []
+    sn = None
+    values = []
     for dataset in filter(None, frame.split(b'\r')):
         dataset = dataset.lstrip(b'\n')
         checksumchar = checksum(dataset[:-2])
@@ -37,19 +37,20 @@ def parse_frame(frame:bytes, influxdb_url:str) -> bool:
         quote = '"'
         if isinstance(value, int):
             quote = ""
-        linevalues.append('{etiquette}={quote}{value}{quote}'.format(
+
+        if etiquette == "ADCO":
+            sn = value
+            continue
+
+        values.append('{etiquette}={quote}{value}{quote}'.format(
             etiquette=etiquette,
             value=value,
             quote=quote,
         ))
-        parsed_values[etiquette] = {
-            'value': value,
-            'timestamp': timestamp,
-        }
 
-    influx_line = 'teleinfo,ADCO={adco} {linev}'.format(
-        adco=parsed_values['ADCO']['value'],
-        linev=','.join(linevalues),
+    influx_line = 'teleinfo,adco={adco} {linev}'.format(
+        adco=sn,
+        linev=','.join(values),
     )
     try:
         requests.post(influxdb_url, data=influx_line)
